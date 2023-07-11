@@ -44,6 +44,7 @@ app.use(
 	}),
 );
 
+// Get na página princial do controller com tratamentos de Sessions
 app.get("/", (req, res) => {
 	if (req.session.errors) {
 		var arrayErrors = req.session.errors;
@@ -58,6 +59,7 @@ app.get("/", (req, res) => {
 	res.render("index", { NavActiveCad: true });
 });
 
+// Get da Listagem de Usuários verificando se existem dados na tabela para listar na página Users
 app.get("/users", (req, res) => {
 	Usuario.findAll()
 		.then(function (valores) {
