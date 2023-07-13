@@ -1,24 +1,35 @@
-// Carregar os módulos necessários
-const express = require("express"); // Framework web
-const fs = require("fs"); // File system for bootstrap.min.css file check
+// Carrega o módulo Express, um framework para aplicações web.
+const express = require("express");
+
+// Carrega o módulo do sistema de arquivos (fs), usado para manipular arquivos.
+const fs = require("fs");
+
+// Cria uma instância do Express.
 const app = express();
-const hbs = require("express-handlebars"); // Templates engine
-const hostname = "10.10.8.142"; // Hostname do servidor
-const bodyParser = require("body-parser"); // Middleware para parse do corpo da requisição
-const session = require("express-session"); // Módulo para gerenciamento de sessões
-const PORT = process.env.PORT || 3000; // Porta onde o servidor vai rodar
 
-// Verify that bootstrap.min.css file exists in the public/css directory
+// Carrega o módulo express-handlebars, que permite o uso do Handlebars como mecanismo de template.
+const hbs = require("express-handlebars");
+
+// Define o hostname para o servidor.
+const hostname = "10.10.8.142";
+
+// Carrega o módulo body-parser, um middleware para analisar o corpo das requisições.
+const bodyParser = require("body-parser");
+
+// Carrega o módulo express-session, que permite gerenciar sessões de usuário.
+const session = require("express-session");
+
+// Define a porta onde o servidor irá rodar. Se a variável de ambiente PORT estiver definida, usa ela. Caso contrário, usa 3000.
+const PORT = process.env.PORT || 3000;
+
+// Verifica se o arquivo bootstrap.min.css existe no diretório public/css.
 fs.access("./public/css/bootstrap.min.css", fs.constants.F_OK, (err) => {
-	console.log(`${err ? "File does not exist" : "File exists"}`);
+	console.log(`${err ? "Arquivo não existe" : "Arquivo existe"}`);
 });
-/**
- * Configuração do Handlebars.
- */
 
-// Define o motor de template para utilizar o 'Handlebars' (hbs).
+// Define o mecanismo de template para usar o 'Handlebars' (hbs).
 app.engine(
-	"hbs", // A extensão do arquivo a ser utilizada para os templates.
+	"hbs",
 	hbs.engine({
 		extname: "hbs", // Define a extensão padrão para os arquivos de template.
 		defaultLayout: "main", // Define o layout padrão para todas as views (a menos que seja especificado de outra forma).
@@ -26,16 +37,18 @@ app.engine(
 );
 
 // Registra o 'Handlebars' como view engine.
-// O Motor de View é responsável por renderizar a resposta final que é enviada ao cliente.
 app.set("view engine", "hbs");
 
-app.use(express.static("public")); // Public é a pasta de arquivos estáticos
-app.use(bodyParser.urlencoded({ extended: false }));
-//Importar Model Usuário
-const Usuario = require("./models/Usuario");
-const { table } = require("console");
+// Define o diretório 'public' como local de arquivos estáticos.
+app.use(express.static("public"));
 
-//Configuração das Sessions
+// Configura o bodyParser para analisar requisições com corpo no formato urlencoded.
+app.use(bodyParser.urlencoded({ extended: false }));
+
+// Importa o modelo de Usuário.
+const Usuario = require("./models/Usuario");
+
+// Configuração das Sessions.
 app.use(
 	session({
 		secret: "CriarUmaChaveQualquer1234",
@@ -44,194 +57,124 @@ app.use(
 	}),
 );
 
-// Get na página princial do controller com tratamentos de Sessions
+// Define o roteamento GET para a raiz do site ("/").
 app.get("/", (req, res) => {
+	// Se houverem erros na sessão, renderiza a página inicial com os erros.
+	// Após a renderização, limpa os erros da sessão.
 	if (req.session.errors) {
 		var arrayErrors = req.session.errors;
 		req.session.errors = "";
 		return res.render("index", { NavActiveCad: true, error: arrayErrors });
 	}
-
+	// Se houve sucesso na sessão, renderiza a página inicial com uma mensagem de sucesso.
+	// Após a renderização, limpa o indicador de sucesso da sessão.
 	if (req.session.success) {
 		req.session.success = false;
 		return res.render("index", { NavActiveCad: true, MsgSuccess: true });
 	}
+	// Se não houve nem erro nem sucesso, renderiza a página inicial normalmente.
 	res.render("index", { NavActiveCad: true });
 });
 
-// Get da Listagem de Usuários verificando se existem dados na tabela para listar na página Users
+// Define o roteamento GET para a página de listagem de usuários ("/users").
 app.get("/users", (req, res) => {
+	// Busca todos os usuários.
 	Usuario.findAll()
 		.then(function (valores) {
-			//console.log(valores.map(valores => valores.toJSON()));
+			// Se houverem usuários, renderiza a página de listagem com a tabela de usuários.
 			if (valores.length > 0) {
 				return res.render("users", { NavActiveUsers: true, table: true, usuarios: valores.map((valores) => valores.toJSON()) });
 			} else {
+				// Se não houverem usuários, renderiza a página de listagem sem a tabela.
 				res.render("users", { NavActiveUsers: true, table: false });
 			}
 		})
 		.catch(function (err) {
+			// Em caso de erro na busca de usuários, loga o erro.
 			console.log(`Houve um problema: ${err}`);
 		});
-	//res.render("users", { NavActiveUsers: true });
 });
 
+// Define o roteamento POST para a edição de usuários ("/editar").
 app.post("/editar", (req, res) => {
-	// Rota da página de edição
 	var id = req.body.id;
+	// Busca o usuário pelo ID.
 	Usuario.findByPk(id)
 		.then((dados) => {
+			// Se o usuário foi encontrado, renderiza a página de edição com os dados do usuário.
 			return res.render("editar", { error: false, id: dados.id, nome: dados.nome, email: dados.email });
 		})
 		.catch((err) => {
+			// Se houve um erro na busca, renderiza a página de edição com uma mensagem de erro.
 			console.log(err);
 			return res.render("editar", { error: true, problema: "Não foi possível editar esse registro" });
 		});
-	//res.render("editar");
 });
 
+// Define o roteamento POST para a exclusão de usuários ("/del").
 app.post("/del", (req, res) => {
+	// Deleta o usuário pelo ID.
 	Usuario.destroy({
 		where: {
 			id: req.body.id,
 		},
 	})
 		.then((retorno) => {
+			// Se o usuário foi excluído com sucesso, redireciona para a página de listagem de usuários.
 			return res.redirect("/users");
 		})
 		.catch((err) => {
+			// Se houve um erro na exclusão, loga o erro.
 			console.log(`Ops, houve um erro: ${err}`);
 		});
 });
 
+// Define o roteamento POST para o cadastro de usuários ("/cad").
 app.post("/cad", (req, res) => {
-	// Rota de cadastro
-	// Extração dos valores vindos do formulário
 	var nome = req.body.nome;
 	var email = req.body.email;
-	// Inicialização do array de erros
 	const erros = [];
-	// Limpeza dos espaços em branco antes e depois dos valores
 	nome = nome.trim();
 	email = email.trim();
-	// Limpeza do nome de caracteres especiais (apenas letras são permitidas)
 	nome = nome.replace(/[^A-zÀ-ú\s]/gi, "");
-	// Verificação da validade de cada campo
+	// Se nome ou email estiverem vazios, ou se nome contiver caracteres especiais, ou se email não for válido,
+	// adiciona o erro correspondente ao array de erros.
 	if (nome == "" || typeof nome == undefined || nome == null) {
 		erros.push({ mensagem: "Campo nome não pode ser vazio!" });
 	}
-	// Apenas letras são permitidas no nome
 	if (!/^[A-Za-záàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ'\s]+$/.test(nome)) {
 		erros.push({ mensagem: "Nome inválido!" });
 	}
 	if (email == "" || typeof email == undefined || email == null) {
 		erros.push({ mensagem: "Campo email não pode ser vazio!" });
 	}
-	// Verificação da validação do email
-	if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
-		erros.push({ mensagem: "Campo email inválido!" });
+	if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+		erros.push({ mensagem: "Email inválido!" });
 	}
-	// Se não existem erros, salva os dados no banco de dados
-	Usuario.findOne({ where: { email: email.toLowerCase() } })
-		.then((usuarioExistente) => {
-			if (usuarioExistente) {
-				erros.push({ mensagem: "E-mail já está em uso!" });
-				req.session.errors = erros;
-				req.session.success = false;
-				return res.redirect("/");
-			} else {
-				// Se o usuário não existe, tenta criar um novo
-				Usuario.create({
-					nome: nome,
-					email: email.toLowerCase(),
-				})
-					.then((usuario) => {
-						console.log(`${usuario.toJSON()} Cadastrado com sucesso`);
-						req.session.success = true;
-						return res.redirect("/");
-					})
-					.catch((erro) => {
-						console.log(`Ops, houve um erro: ${erro}`);
-						erros.push({ mensagem: "Erro ao cadastrar usuário" });
-						req.session.errors = erros;
-						req.session.success = false;
-						return res.redirect("/");
-					});
-			}
-		})
-		.catch((erro) => {
-			console.log(`Ops, houve um erro: ${erro}`);
-			erros.push({ mensagem: "Erro ao verificar o usuário" });
-			req.session.errors = erros;
-			req.session.success = false;
-			return res.redirect("/");
-		});
-	// Se existem erros, volta para a página principal com erros
+
+	// Se houverem erros, armazena-os na sessão e redireciona para a página inicial.
 	if (erros.length > 0) {
-		console.log(erros);
 		req.session.errors = erros;
-		req.session.success = false;
 		return res.redirect("/");
 	}
-});
 
-app.post("/update", (req, res) => {
-	//Rota de Edição de Registro
-	//Validação
-	var nome = req.body.nome;
-	var email = req.body.email;
-	// Inicialização do array de erros
-	const erros = [];
-	// Limpeza dos espaços em branco antes e depois dos valores
-	email = email.trim();
-	// Limpeza do nome de caracteres especiais (apenas letras são permitidas)
-	nome = nome.replace(/[^A-zÀ-ú\s]/gi, "");
-	nome = nome.trim();
-	// Verificação da validade de cada campo
-	if (nome == "" || typeof nome == undefined || nome == null) {
-		erros.push({ mensagem: "Campo nome não pode ser vazio!" });
-	}
-	// Apenas letras são permitidas no nome
-	if (!/^[A-Za-záàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ'\s]+$/.test(nome)) {
-		erros.push({ mensagem: "Nome inválido!" });
-	}
-	if (email == "" || typeof email == undefined || email == null) {
-		erros.push({ mensagem: "Campo email não pode ser vazio!" });
-	}
-	// Verificação da validação do email
-	if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
-		erros.push({ mensagem: "Campo email inválido!" });
-	}
-	// Se existem erros, volta para a página principal com erros
-	if (erros.length > 0) {
-		console.log(erros);
-		return res.status(400).send({ status: 400, erro: erros });
-	}
-	//Fim de Validação
-	//Atualizar no Banco
-	var id = req.body.id;
-	Usuario.update(
-		{
-			nome: nome,
-			email: email.toLowerCase(),
-		},
-		{
-			where: {
-				id: id,
-			},
-		},
-	)
-		.then((resultado) => {
-			console.log(resultado);
-			return res.redirect("/users");
+	// Se não houverem erros, cria um novo usuário.
+	Usuario.create({
+		nome: nome,
+		email: email,
+	})
+		.then(() => {
+			// Se o usuário foi criado com sucesso, armazena a mensagem de sucesso na sessão e redireciona para a página inicial.
+			req.session.success = true;
+			return res.redirect("/");
 		})
 		.catch((err) => {
-			console.log(`Ops, houve algum erro: ${err}`);
-			return res.status(400).send({ status: 400, erro: "Email já cadastrado" });
+			// Se houve um erro na criação do usuário, loga o erro.
+			console.log(`Houve um erro: ${err}`);
 		});
 });
 
-// Iniciar o servidor
-app.listen(PORT, () => {
-	console.log("Servidor rodando em http://127.0.0.1:"+PORT);
+// Faz com que o servidor comece a escutar as requisições na porta definida anteriormente.
+app.listen(PORT, hostname, () => {
+	console.log(`Servidor rodando em http://${hostname}:${PORT}`);
 });
