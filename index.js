@@ -1,4 +1,6 @@
 // Carrega o módulo Express, um framework para aplicações web.
+// npm init -y
+// npm install express
 const express = require("express");
 
 // Carrega o módulo do sistema de arquivos (fs), usado para manipular arquivos.
@@ -8,15 +10,18 @@ const fs = require("fs");
 const app = express();
 
 // Carrega o módulo express-handlebars, que permite o uso do Handlebars como mecanismo de template.
+// npm install express-handlebars
 const hbs = require("express-handlebars");
 
 // Define o hostname para o servidor.
 const hostname = "10.10.8.142";
 
 // Carrega o módulo body-parser, um middleware para analisar o corpo das requisições.
+// npm install body-parser
 const bodyParser = require("body-parser");
 
 // Carrega o módulo express-session, que permite gerenciar sessões de usuário.
+// npm install express-session
 const session = require("express-session");
 
 // Define a porta onde o servidor irá rodar. Se a variável de ambiente PORT estiver definida, usa ela. Caso contrário, usa 3000.

@@ -1,5 +1,8 @@
 // Se o sequelize for um módulo do Node.js que fornece uma forma abstrata de interagir com bancos de dados SQL,
 // o código a seguir importa o módulo 'sequelize'.
+
+// npm install sequelize
+// npm install mysql2
 const Sequelize = require("sequelize");
 
 // Cria uma instância de conexão com o banco de dados chamado 'node_exemplo' usando o sequelize.
